@@ -17,9 +17,11 @@ namespace Benday.Presidents.WebUI.Controllers
         private const int ID_FOR_CREATE_NEW_PRESIDENT = 0;
         private IPresidentService _Service;
         private IValidatorStrategy<President> _Validator;
+        private ITestDataUtility _TestDataUtility;
 
         public PresidentController(IPresidentService service,
-            IValidatorStrategy<President> validator
+            IValidatorStrategy<President> validator,
+            ITestDataUtility testDataUtility
             )
         {
             if (service == null)
@@ -32,6 +34,7 @@ namespace Benday.Presidents.WebUI.Controllers
 
             _Validator = validator;
             _Service = service;
+            _TestDataUtility = testDataUtility;
         }
 
         public ActionResult Index()
@@ -41,6 +44,8 @@ namespace Benday.Presidents.WebUI.Controllers
             return View(presidents);
         }
 
+        [Route("/[controller]/[action]/{id}")]
+        [Route("/president/{id}.aspx")]
         public ActionResult Details(int? id)
         {
             if (id == null || id.HasValue == false)
@@ -56,6 +61,26 @@ namespace Benday.Presidents.WebUI.Controllers
             }
 
             return View(president);
+        }
+
+        [Route("/president/{last:alpha}/{first:alpha}")]
+        public ActionResult Details(string last, string first)
+        {
+            if (String.IsNullOrWhiteSpace(last) == true ||
+                String.IsNullOrWhiteSpace(first) == true)
+            {
+                return new BadRequestResult();
+            }
+
+            var president = _Service.Search(
+                first, last).FirstOrDefault();
+
+            if (president == null)
+            {
+                return NotFound();
+            }
+
+            return View("Details", president);
         }
 
         public ActionResult Create()
@@ -134,11 +159,14 @@ namespace Benday.Presidents.WebUI.Controllers
 
         public ActionResult ResetDatabase()
         {
-            var utility = new TestDataUtility(_Service);
+            _TestDataUtility.CreatePresidentTestData();
 
-            utility.CreatePresidentTestData(
-                this.HttpContext.RequestServices.GetService(typeof(IHostingEnvironment)) as IHostingEnvironment
-                );
+            return RedirectToAction("Index");
+        }
+
+        public ActionResult VerifyDatabaseIsPopulated()
+        {
+            _TestDataUtility.VerifyDatabaseIsPopulated();
 
             return RedirectToAction("Index");
         }

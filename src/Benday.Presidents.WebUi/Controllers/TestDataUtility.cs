@@ -9,41 +9,51 @@ using System.IO;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
 using Benday.Presidents.WebUi.TestData;
+using Benday.Presidents.Api.DataAccess;
 
 namespace Benday.Presidents.WebUI.Controllers
 {
-    public class TestDataUtility
+    public class TestDataUtility : ITestDataUtility
     {
         private IPresidentService _Service;
-
-        public TestDataUtility(IPresidentService service)
+        private PresidentsDbContext _DbContext;
+        
+        public TestDataUtility(IPresidentService service, PresidentsDbContext dbContext)
         {
             if (service == null)
                 throw new ArgumentNullException("service", "service is null.");
 
             _Service = service;
+
+            if (dbContext == null)
+            {
+                throw new ArgumentNullException("dbContext", "Argument cannot be null.");
+            }
+
+            _DbContext = dbContext;
         }
 
-        private string MapPath(IHostingEnvironment env, string fromPath)
+        public void CreatePresidentTestData()
         {
-            if (env == null)
-                throw new ArgumentNullException(nameof(env), $"{nameof(env)} is null.");
-            if (string.IsNullOrEmpty(fromPath))
-                throw new ArgumentException($"{nameof(fromPath)} is null or empty.", nameof(fromPath));
-
-            return Path.Combine(env.ContentRootPath, fromPath);
-        }
-
-        public void CreatePresidentTestData(IHostingEnvironment env)
-        {
-            // string xml = TestDataResource.us_presidents;
             var xml = TestDataResource.UsPresidentsXml;
 
             List<President> allPresidents = PopulatePresidentsFromXml(xml);
-            
+
             DeleteAll();
 
             allPresidents.ForEach(x => _Service.Save(x));
+        }
+
+        public void VerifyDatabaseIsPopulated()
+        {
+            _DbContext.Database.EnsureCreated();
+
+            var presidents = _Service.GetPresidents();
+
+            if (presidents == null || presidents.Count == 0)
+            {
+                CreatePresidentTestData();
+            }
         }
 
         private List<President> PopulatePresidentsFromXml(string xml)
@@ -149,6 +159,5 @@ namespace Benday.Presidents.WebUI.Controllers
             }
         }
     }
-
 
 }

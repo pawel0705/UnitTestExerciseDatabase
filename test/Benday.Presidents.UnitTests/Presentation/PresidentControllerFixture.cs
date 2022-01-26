@@ -31,7 +31,8 @@ namespace Benday.Presidents.UnitTests.Presentation
                 {
                     _SystemUnderTest = new PresidentController(
                         PresidentServiceInstance,
-                        new DefaultValidatorStrategy<President>()
+                        new DefaultValidatorStrategy<President>(),
+                        null
                         );
                 }
 

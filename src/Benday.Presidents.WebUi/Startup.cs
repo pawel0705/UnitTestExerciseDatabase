@@ -19,6 +19,7 @@ using Microsoft.EntityFrameworkCore.SqlServer;
 using Benday.DataAccess;
 using Benday.Presidents.Api.DataAccess.SqlServer;
 using Benday.Presidents.Api.Models;
+using Benday.Presidents.WebUI.Controllers;
 
 namespace Benday.Presidents.WebUi
 {
@@ -28,7 +29,7 @@ namespace Benday.Presidents.WebUi
         {
             Configuration = configuration;
         }
-
+        
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -75,7 +76,7 @@ namespace Benday.Presidents.WebUi
 
         private void CheckDatabaseHasBeenDeployed(IApplicationBuilder app)
         {
-            using (var scope = 
+            using (var scope =
                 app.ApplicationServices.GetRequiredService<IServiceScopeFactory>()
                 .CreateScope())
             {
@@ -109,6 +110,8 @@ namespace Benday.Presidents.WebUi
             services.AddTransient<IFeatureRepository, SqlEntityFrameworkFeatureRepository>();
 
             services.AddTransient<IPresidentService, PresidentService>();
+
+            services.AddTransient<ITestDataUtility, TestDataUtility>();
         }
     }
 }

@@ -3,8 +3,8 @@
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "http://localhost:60688/",
-      "sslPort": 44307
+      "applicationUrl": "http://localhost:60701/",
+      "sslPort": 44355
     }
   },
   "profiles": {
@@ -15,7 +15,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "Benday.Presidents.WebUi": {
+    "Benday.Presidents.MvcIntegrationTests": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {

@@ -26,24 +26,31 @@ namespace Benday.Presidents.Api.Models
                 return new ValidationResult("Value cannot be null.");
             }
 
-            var valueAsString = value.ToString();
-
-            if (String.IsNullOrWhiteSpace(valueAsString) == true)
-            {
-                return new ValidationResult("Value cannot be blank.");
-            }
 
             DateTime valueAsDateTime;
 
-            if (DateTime.TryParse(valueAsString, out valueAsDateTime) == false)
+            if (value is DateTime)
             {
-                return new ValidationResult("Value is not a DateTime.");
+                valueAsDateTime = (DateTime)value;
             }
+            else
+            {
+                var valueAsString = value.ToString();
 
+                if (String.IsNullOrWhiteSpace(valueAsString) == true)
+                {
+                    return new ValidationResult("Value cannot be blank.");
+                }
+
+                if (DateTime.TryParse(valueAsString, out valueAsDateTime) == false)
+                {
+                    return new ValidationResult("Value is not a DateTime.");
+                }
+            }
 
             object otherValue = null;
 
-            PropertyInfo otherPropertyInfo = 
+            PropertyInfo otherPropertyInfo =
                 validationContext.ObjectType.GetProperty(_OtherPropertyName);
 
             if (otherPropertyInfo == null)
@@ -60,12 +67,19 @@ namespace Benday.Presidents.Api.Models
             {
                 return new ValidationResult("Other property value not specified.");
             }
-            
+
             DateTime otherValueAsDateTime;
 
-            if (DateTime.TryParse(otherValue.ToString(), out otherValueAsDateTime) == false)
+            if (otherValue is DateTime)
             {
-                return new ValidationResult("Other value is not a DateTime.");
+                otherValueAsDateTime = (DateTime)otherValue;
+            }
+            else
+            {
+                if (DateTime.TryParse(otherValue.ToString(), out otherValueAsDateTime) == false)
+                {
+                    return new ValidationResult("Other value is not a DateTime.");
+                }
             }
 
             if (_CompareType == DateTimeCompareTypeEnum.GreaterThan)
@@ -80,7 +94,7 @@ namespace Benday.Presidents.Api.Models
                     return new ValidationResult(
                         String.Format(
                             "{0} should be greater than {1}.",
-                            validationContext.DisplayName, 
+                            validationContext.DisplayName,
                             _OtherPropertyName));
                 }
             }
