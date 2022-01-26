@@ -15,6 +15,7 @@ namespace Benday.Presidents.Api.DataAccess
         {
             FirstName = String.Empty;
             LastName = String.Empty;
+            Relationships = new List<Relationship>();
             Facts = new List<PersonFact>();
         }
 
@@ -25,6 +26,28 @@ namespace Benday.Presidents.Api.DataAccess
         {
             get;
             set;
+        }
+
+        public virtual List<Relationship> Relationships
+        {
+            get;
+            set;
+        }
+
+        public void AddRelationship(string relationshipType, Person person)
+        {
+            if (string.IsNullOrEmpty(relationshipType))
+                throw new ArgumentException("relationshipType is null or empty.", "relationshipType");
+            if (person == null)
+                throw new ArgumentNullException("person", "person is null.");
+
+            var relationship = new Relationship();
+
+            relationship.ToPerson = person;
+            relationship.FromPerson = this;
+            relationship.RelationshipType = relationshipType;
+
+            Relationships.Add(relationship);
         }
 
         public void AddFact(string factType, string factValue)

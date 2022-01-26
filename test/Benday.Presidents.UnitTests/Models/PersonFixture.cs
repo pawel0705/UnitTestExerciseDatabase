@@ -48,6 +48,30 @@ namespace Benday.Presidents.UnitTests.Models
         }
 
         [TestMethod]
+        public void WhenCreatedThenRelationshipsCollectionIsNotNull()
+        {
+            Assert.IsNotNull(SystemUnderTest.Relationships);
+        }
+
+        [TestMethod]
+        public void WhenAddRelationshipIsCalledThenRelationshipIsAddedToCollection()
+        {
+            var toPerson = new Person();
+
+            var expectedRelationshipType = "Vice President";
+
+            SystemUnderTest.AddRelationship(expectedRelationshipType, toPerson);
+
+            Assert.AreEqual<int>(1, SystemUnderTest.Relationships.Count, "Should be a relationship.");
+
+            var actual = SystemUnderTest.Relationships[0];
+
+            Assert.AreEqual<string>(expectedRelationshipType, actual.RelationshipType, "Relationship type was wrong.");
+            Assert.AreSame(toPerson, actual.ToPerson, "ToPerson was wrong.");
+            Assert.AreSame(SystemUnderTest, actual.FromPerson, "FromPerson was wrong.");
+        }
+
+        [TestMethod]
         public void WhenAddFactIsCalledThenFactIsAddedToCollection_StringBasedFact()
         {
             var expectedFactType = "Role";

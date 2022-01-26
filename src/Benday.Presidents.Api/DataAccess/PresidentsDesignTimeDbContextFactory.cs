@@ -1,19 +1,19 @@
-﻿using System;
-using System.IO;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using System;
+using System.IO;
 
 namespace Benday.Presidents.Api.DataAccess
 {
     public class PresidentsDesignTimeDbContextFactory :
-      IDesignTimeDbContextFactory<PresidentsDbContext>
+            IDesignTimeDbContextFactory<PresidentsDbContext>
     {
         public PresidentsDbContext Create()
         {
             var environmentName =
-       Environment.GetEnvironmentVariable(
-        "ASPNETCORE_ENVIRONMENT");
+                Environment.GetEnvironmentVariable(
+                    "ASPNETCORE_ENVIRONMENT");
 
             var basePath = AppContext.BaseDirectory;
 
@@ -54,15 +54,15 @@ namespace Benday.Presidents.Api.DataAccess
         {
             if (string.IsNullOrEmpty(connectionString))
                 throw new ArgumentException(
-                   $"{nameof(connectionString)} is null or empty.",
-                   nameof(connectionString));
+             $"{nameof(connectionString)} is null or empty.",
+             nameof(connectionString));
 
             var optionsBuilder =
-              new DbContextOptionsBuilder<PresidentsDbContext>();
+                 new DbContextOptionsBuilder<PresidentsDbContext>();
 
             Console.WriteLine(
-             "PresidentsDesignTimeDbContextFactory.Create(string): Connection string: {0}",
-             connectionString);
+                "PresidentsDesignTimeDbContextFactory.Create(string): Connection string: {0}",
+                connectionString);
 
             optionsBuilder.UseSqlServer(connectionString);
 

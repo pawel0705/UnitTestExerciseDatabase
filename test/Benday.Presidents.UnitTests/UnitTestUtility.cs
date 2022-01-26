@@ -94,6 +94,7 @@ namespace Benday.Presidents.UnitTests
                 returnValue.Id = simulatedIdentityValue++;
 
                 returnValue.Facts.ForEach(item => item.Id = simulatedIdentityValue++);
+                returnValue.Relationships.ForEach(item => item.Id = simulatedIdentityValue++);
             }
 
             return returnValue;

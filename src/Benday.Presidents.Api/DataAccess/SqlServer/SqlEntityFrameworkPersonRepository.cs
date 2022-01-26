@@ -11,8 +11,8 @@ using Benday.DataAccess.SqlServer;
 
 namespace Benday.Presidents.Api.DataAccess.SqlServer
 {
-    public class SqlEntityFrameworkPersonRepository :
-        SqlEntityFrameworkCrudRepositoryBase<Person, PresidentsDbContext>
+    public class SqlEntityFrameworkPersonRepository : 
+        SqlEntityFrameworkCrudRepositoryBase<Person, PresidentsDbContext>, IRepository<Person>
     {
         public SqlEntityFrameworkPersonRepository(
             PresidentsDbContext context) : base(context)
@@ -32,6 +32,7 @@ namespace Benday.Presidents.Api.DataAccess.SqlServer
         {
             return (
                 from temp in EntityDbSet
+                    .Include(x => x.Relationships)
                     .Include(p => p.Facts)
                 orderby temp.LastName, temp.FirstName
                 select temp
@@ -42,6 +43,10 @@ namespace Benday.Presidents.Api.DataAccess.SqlServer
         {
             return (
                 from temp in EntityDbSet
+                    .Include(x => x.Relationships)
+                        .ThenInclude(r1 => r1.ToPerson)
+                    .Include(x => x.Relationships)
+                        .ThenInclude(r => r.FromPerson)
                     .Include(p => p.Facts)
                 where temp.Id == id
                 select temp

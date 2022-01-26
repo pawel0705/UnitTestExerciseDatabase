@@ -1,38 +1,99 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using Benday.DataAccess;
-using Benday.Presidents.Api.DataAccess;
+using System.Text;
+using System.Threading.Tasks;
 using Benday.Presidents.Api.Models;
+using Benday.Presidents.Common;
+using Benday.Presidents.Api.DataAccess;
+using Benday.DataAccess;
 
 namespace Benday.Presidents.Api.Services
 {
-    public class PresidentService
+    public class PresidentService : IPresidentService
     {
-        private IRepository<Person> _Repository;
-        private IPersonToPresidentAdapter _Adapter;
+        private IRepository<Person> _RepositoryInstance;
+        private IValidatorStrategy<President> _ValidatorInstance;
+
+        private PersonToPresidentAdapter _Adapter;
+        private IDaysInOfficeStrategy _DaysInOfficeStrategy;
 
         public PresidentService(
-            IRepository<Person> repository,
-            IPersonToPresidentAdapter adapter
-        )
+            IRepository<Person> personRepositoryInstance,
+            IValidatorStrategy<President> validator,
+            IDaysInOfficeStrategy daysInOfficeStrategy)
         {
-            if (repository == null)
+            if (personRepositoryInstance == null)
+                throw new ArgumentNullException("personRepositoryInstance", "personRepositoryInstance is null.");
+            if (validator == null)
+                throw new ArgumentNullException("validator", "Argument cannot be null.");
+
+            _RepositoryInstance = personRepositoryInstance;
+            _ValidatorInstance = validator;
+            _Adapter = new PersonToPresidentAdapter();
+            _DaysInOfficeStrategy = daysInOfficeStrategy;
+        }
+
+        public void Save(President saveThis)
+        {
+            if (saveThis == null)
+                throw new ArgumentNullException("saveThis", "saveThis is null.");
+
+            if (_ValidatorInstance.IsValid(saveThis) == false)
             {
-                throw new ArgumentNullException("repository", "Argument cannot be null.");
+                throw new InvalidOperationException("President is invalid.");
             }
 
-            if (adapter == null)
+            Person toValue;
+
+            if (saveThis.Id == 0)
             {
-                throw new ArgumentNullException("adapter", "Argument cannot be null.");
+                toValue = new Person();
+            }
+            else
+            {
+                toValue = _RepositoryInstance.GetById(saveThis.Id);
+
+                if (toValue == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Could not locate a person with an id of '{saveThis.Id}'."
+                        );
+                }
             }
 
-            _Adapter = adapter;
-            _Repository = repository;
+            _Adapter.Adapt(saveThis, toValue);
+
+            _RepositoryInstance.Save(toValue);
+
+            // remove terms that are marked for delete
+            saveThis.Terms
+                .Where(term => term.IsDeleted == true)
+                .ToList()
+                .ForEach(term => saveThis.Terms.Remove(term));
+
+            saveThis.Id = toValue.Id;
+        }
+
+        public void DeletePresidentById(int id)
+        {
+            var match = _RepositoryInstance.GetById(id);
+
+            if (match == null)
+            {
+                throw new InvalidOperationException(
+                        $"Could not locate a person with an id of '{id}'."
+                        );
+            }
+            else
+            {
+                _RepositoryInstance.Delete(match);
+            }
         }
 
         public President GetPresidentById(int id)
         {
-            var match = _Repository.GetById(id);
+            var match = _RepositoryInstance.GetById(id);
 
             if (match == null)
             {
@@ -40,46 +101,104 @@ namespace Benday.Presidents.Api.Services
             }
             else
             {
-                var toPresident = new President();
-
-                _Adapter.Adapt(match, toPresident);
-
-                return toPresident;
+                return ToPresident(match);
             }
         }
 
-        public void Save(President saveThis)
+        public IList<President> GetPresidents()
         {
-            if (saveThis == null)
-            {
-                throw new ArgumentNullException("saveThis", "Argument cannot be null.");
-            }
+            var allPeople = _RepositoryInstance.GetAll();
 
-            var allPersons = _Repository.GetAll();
-
-            var match = (
-                from temp in allPersons
-                where temp.FirstName == saveThis.FirstName &&
-                temp.LastName == saveThis.LastName &&
-                temp.Facts.GetFactValueAsDateTime(PresidentsConstants.BirthDate) ==
-                    saveThis.BirthDate
+            var peopleWhoWerePresident =
+                (
+                from temp in allPeople
+                where temp.Facts.GetFact(PresidentsConstants.President) != null
                 select temp
-            ).FirstOrDefault();
+                );
 
-            if (match == null)
+            return ToPresidents(peopleWhoWerePresident);
+        }
+
+        private President ToPresident(Person fromValue)
+        {
+            var toValue = new President();
+
+            _Adapter.Adapt(fromValue, toValue);
+
+            return toValue;
+        }
+
+        private IList<President> ToPresidents(IEnumerable<Person> peopleWhoWerePresident)
+        {
+            var returnValues = new List<President>();
+
+            _Adapter.Adapt(peopleWhoWerePresident, returnValues);
+
+            foreach (var president in returnValues)
             {
-                var toPerson = new Person();
-
-                _Adapter.Adapt(saveThis, toPerson);
-
-                _Repository.Save(toPerson);
-
-                saveThis.Id = toPerson.Id;
+                president.DaysInOffice = 
+                    _DaysInOfficeStrategy.GetDaysInOffice
+                        (president.Terms);
             }
-            else
+
+            return returnValues;
+        }
+
+        public IList<President> Search(
+            string firstName, string lastName)
+        {
+            var allPresidents = GetPresidents();
+
+            IEnumerable<President> returnValues =
+                allPresidents;
+
+            if (String.IsNullOrWhiteSpace(firstName) == false)
             {
-                throw new InvalidOperationException("Cannot save duplicate president.");
+                returnValues =
+                    returnValues.Where(p => p.FirstName.ToLower().Contains(firstName.ToLower()));
             }
+
+            if (String.IsNullOrWhiteSpace(lastName) == false)
+            {
+                returnValues =
+                    returnValues.Where(p => p.LastName.ToLower().Contains(lastName.ToLower()));
+            }
+
+            return returnValues.ToList();
+        }
+
+        public IList<President> Search(string firstName, string lastName, string birthState, string deathState)
+        {
+            var allPresidents = GetPresidents();
+
+            IEnumerable<President> returnValues =
+                allPresidents;
+
+            if (String.IsNullOrWhiteSpace(firstName) == false)
+            {
+                returnValues =
+                    returnValues.Where(p => p.FirstName.ToLower().Contains(firstName.ToLower()));
+            }
+
+            if (String.IsNullOrWhiteSpace(lastName) == false)
+            {
+                returnValues =
+                    returnValues.Where(p => p.LastName.ToLower().Contains(lastName.ToLower()));
+            }
+
+            if (String.IsNullOrWhiteSpace(birthState) == false)
+            {
+                returnValues =
+                    returnValues.Where(p => p.BirthState != null && p.BirthState.ToLower().Contains(birthState.ToLower()));
+            }
+
+            if (String.IsNullOrWhiteSpace(deathState) == false)
+            {
+                returnValues =
+                    returnValues.Where(p => p.DeathState != null && p.DeathState.ToLower().Contains(deathState.ToLower()));
+            }
+
+            return returnValues.ToList();
         }
     }
 }

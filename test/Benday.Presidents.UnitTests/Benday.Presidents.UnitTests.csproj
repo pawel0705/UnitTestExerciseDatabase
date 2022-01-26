@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Benday.Presidents.Api\Benday.Presidents.Api.csproj" />
+    <ProjectReference Include="..\..\src\Benday.Presidents.WebUi\Benday.Presidents.WebUi.csproj" />
   </ItemGroup>
 
 </Project>

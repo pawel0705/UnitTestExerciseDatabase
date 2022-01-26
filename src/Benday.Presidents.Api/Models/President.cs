@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Benday.Presidents.Api.Models
 {
-    public class President
+    public class President : IValidatableObject
     {
         public President()
         {
@@ -25,7 +25,7 @@ namespace Benday.Presidents.Api.Models
         [Required]
         [DisplayFormat(ConvertEmptyStringToNull = false)]
         public string FirstName { get; set; }
-        
+
         [Display(Name = "Last Name")]
         [Required]
         [DisplayFormat(ConvertEmptyStringToNull = false)]
@@ -37,10 +37,14 @@ namespace Benday.Presidents.Api.Models
         public List<Term> Terms { get; private set; }
 
         [Display(Name = "Date of Birth")]
+        [DateTimePropertyCompareValidatorAttribute(
+            DateTimeCompareTypeEnum.LessThan, nameof(DeathDate))]
         [DisplayFormat(DataFormatString = "{0:d}")]
         public DateTime BirthDate { get; set; }
 
         [Display(Name = "Date of Death")]
+        [DateTimePropertyCompareValidatorAttribute(
+            DateTimeCompareTypeEnum.GreaterThan, nameof(BirthDate))]
         [DisplayFormat(DataFormatString = "{0:d}")]
         public DateTime DeathDate { get; set; }
 
@@ -60,6 +64,9 @@ namespace Benday.Presidents.Api.Models
         [DisplayFormat(ConvertEmptyStringToNull = false)]
         public string DeathState { get; set; }
 
+        [Display(Name = "Days In Office")]
+        public int DaysInOffice { get; set; }
+
         public void AddTerm(string role, DateTime startDate, DateTime endDate, int number)
         {
             Terms.Add(new Term()
@@ -71,5 +78,20 @@ namespace Benday.Presidents.Api.Models
             });
         }
 
+        public IEnumerable<ValidationResult> Validate(
+            ValidationContext validationContext)
+        {
+            if (Terms.Count == 0)
+            {
+                yield return
+                    new ValidationResult("President has no terms.");
+            }
+
+            if (Terms.Count > 2)
+            {
+                yield return
+                    new ValidationResult("President cannot have more than 2 terms.");
+            }
+        }
     }
 }
