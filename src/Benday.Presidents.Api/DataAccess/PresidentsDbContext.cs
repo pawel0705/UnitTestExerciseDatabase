@@ -23,6 +23,7 @@ namespace Benday.Presidents.Api.DataAccess
         public DbSet<Relationship> Relationships { get; set; }
         public DbSet<Feature> Features { get; set; }
         public DbSet<LogEntry> LogEntries { get; set; }
+        public DbSet<Subscription> Subscriptions { get; set; }
 
         public override int SaveChanges()
         {

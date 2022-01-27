@@ -4,14 +4,16 @@ using Benday.Presidents.Api.DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Benday.Presidents.Api.Migrations
 {
     [DbContext(typeof(PresidentsDbContext))]
-    partial class PresidentsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20181120180930_SubscriptionInfo")]
+    partial class SubscriptionInfo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -10,6 +10,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
 using Benday.Presidents.WebUi.TestData;
 using Benday.Presidents.Api.DataAccess;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
+using Benday.Presidents.WebUi;
 
 namespace Benday.Presidents.WebUI.Controllers
 {
@@ -17,8 +20,13 @@ namespace Benday.Presidents.WebUI.Controllers
     {
         private IPresidentService _Service;
         private PresidentsDbContext _DbContext;
-        
-        public TestDataUtility(IPresidentService service, PresidentsDbContext dbContext)
+        private UserManager<IdentityUser> _UserManager;
+        private RoleManager<IdentityRole> _RoleManager;
+
+        public TestDataUtility(IPresidentService service, PresidentsDbContext dbContext,
+            UserManager<IdentityUser> userManager,
+            RoleManager<IdentityRole> roleManager
+            )
         {
             if (service == null)
                 throw new ArgumentNullException("service", "service is null.");
@@ -31,9 +39,12 @@ namespace Benday.Presidents.WebUI.Controllers
             }
 
             _DbContext = dbContext;
+
+            _UserManager = userManager;
+            _RoleManager = roleManager;
         }
 
-        public void CreatePresidentTestData()
+        public async Task CreatePresidentTestData()
         {
             var xml = TestDataResource.UsPresidentsXml;
 
@@ -42,9 +53,11 @@ namespace Benday.Presidents.WebUI.Controllers
             DeleteAll();
 
             allPresidents.ForEach(x => _Service.Save(x));
+
+            await InitializeSecurity();
         }
 
-        public void VerifyDatabaseIsPopulated()
+        public async Task VerifyDatabaseIsPopulated()
         {
             _DbContext.Database.EnsureCreated();
 
@@ -52,7 +65,7 @@ namespace Benday.Presidents.WebUI.Controllers
 
             if (presidents == null || presidents.Count == 0)
             {
-                CreatePresidentTestData();
+                await CreatePresidentTestData();
             }
         }
 
@@ -156,6 +169,64 @@ namespace Benday.Presidents.WebUI.Controllers
             foreach (var item in allPresidents)
             {
                 _Service.DeletePresidentById(item.Id);
+            }
+        }
+        private async Task InitializeSecurity()
+        {
+            await DeleteAllRoles();
+            await DeleteAllUsers();
+
+            // create the roles
+            await _RoleManager.CreateAsync(new IdentityRole(SecurityConstants.RoleName_Admin));
+            await _RoleManager.CreateAsync(new IdentityRole(SecurityConstants.RoleName_User));
+
+            // create users
+            var admin = await CreateUser(SecurityConstants.Username_Admin);
+            var user1 = await CreateUser(SecurityConstants.Username_User1);
+            var user2 = await CreateUser(SecurityConstants.Username_User2);
+            var user3 = await CreateUser(SecurityConstants.Username_Subscriber1);
+            var user4 = await CreateUser(SecurityConstants.Username_Subscriber2);
+        }
+
+        private async Task<IdentityUser> CreateUser(string username)
+        {
+            var user = new IdentityUser();
+
+            user.UserName = username;
+            user.Email = username;
+            user.EmailConfirmed = true;
+
+            var result = await _UserManager.CreateAsync(user, SecurityConstants.DefaultPassword);
+
+            if (result.Succeeded == false)
+            {
+                throw new InvalidOperationException("Error while creating user." + Environment.NewLine + result.Errors.ToString());
+            }
+            else
+            {
+                Console.WriteLine();
+            }
+
+            return user;
+        }
+
+        private async Task DeleteAllUsers()
+        {
+            var users = _UserManager.Users.ToList();
+
+            foreach (var deleteThisUser in users)
+            {
+                await _UserManager.DeleteAsync(deleteThisUser);
+            }
+        }
+
+        private async Task DeleteAllRoles()
+        {
+            var roles = _RoleManager.Roles.ToList();
+
+            foreach (var deleteThis in roles)
+            {
+                await _RoleManager.DeleteAsync(deleteThis);
             }
         }
     }

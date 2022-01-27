@@ -9,9 +9,14 @@ using System.Net;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Authorization;
+using System.Threading.Tasks;
+using Benday.Presidents.WebUi;
 
 namespace Benday.Presidents.WebUI.Controllers
 {
+
+    // [Authorize(Roles = SecurityConstants.RoleName_Admin)]
     public class PresidentController : Controller
     {
         private const int ID_FOR_CREATE_NEW_PRESIDENT = 0;
@@ -37,6 +42,7 @@ namespace Benday.Presidents.WebUI.Controllers
             _TestDataUtility = testDataUtility;
         }
 
+        [AllowAnonymous]
         public ActionResult Index()
         {
             var presidents = _Service.GetPresidents();
@@ -44,6 +50,7 @@ namespace Benday.Presidents.WebUI.Controllers
             return View(presidents);
         }
 
+        [AllowAnonymous]
         [Route("/[controller]/[action]/{id}")]
         [Route("/president/{id}.aspx")]
         public ActionResult Details(int? id)
@@ -88,6 +95,8 @@ namespace Benday.Presidents.WebUI.Controllers
             return RedirectToAction("Edit", new { id = ID_FOR_CREATE_NEW_PRESIDENT });
         }
 
+        // [Authorize(Roles = SecurityConstants.RoleName_Admin)]
+        [Authorize(Policy = SecurityConstants.PolicyName_EditPresident)]
         public ActionResult Edit(int? id)
         {
             if (id == null)
@@ -120,6 +129,8 @@ namespace Benday.Presidents.WebUI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        // [Authorize(Roles = SecurityConstants.RoleName_Admin)]
+        [Authorize(Policy = SecurityConstants.PolicyName_EditPresident)]
         public ActionResult Edit(President president)
         {
             if (_Validator.IsValid(president) == true)
@@ -157,13 +168,15 @@ namespace Benday.Presidents.WebUI.Controllers
             return View(president);
         }
 
-        public ActionResult ResetDatabase()
+        //[AllowAnonymous]
+        public async Task<ActionResult> ResetDatabase()
         {
-            _TestDataUtility.CreatePresidentTestData();
+            await _TestDataUtility.CreatePresidentTestData();
 
             return RedirectToAction("Index");
         }
 
+        //[AllowAnonymous]
         public ActionResult VerifyDatabaseIsPopulated()
         {
             _TestDataUtility.VerifyDatabaseIsPopulated();

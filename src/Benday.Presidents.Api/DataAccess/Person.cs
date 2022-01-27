@@ -139,12 +139,12 @@ namespace Benday.Presidents.Api.DataAccess
         private void UpdateExistingFactByFactType(int id, string factType, string factValue, DateTime factStartDate, DateTime factEndDate)
         {
             bool foundIt = false;
-            
+
             // locate existing fact 
             PersonFact fact = (from temp in Facts
-                        where temp.FactType == factType
-                        select temp).FirstOrDefault();
-            
+                               where temp.FactType == factType
+                               select temp).FirstOrDefault();
+
             if (fact == null)
             {
                 fact = new PersonFact();
@@ -168,10 +168,10 @@ namespace Benday.Presidents.Api.DataAccess
             }
         }
 
-        public void AddNewFact(int id, 
-            string factType, 
-            string factValue, 
-            DateTime factStartDate, 
+        public void AddNewFact(int id,
+            string factType,
+            string factValue,
+            DateTime factStartDate,
             DateTime factEndDate)
         {
             var fact = new PersonFact();
@@ -192,15 +192,15 @@ namespace Benday.Presidents.Api.DataAccess
             AddFact(0, factType, factValue, factStartDate, factEndDate);
         }
 
-        public void AddFact(int id, 
-            string factType, 
-            string factValue, 
-            DateTime factStartDate, 
+        public void AddFact(int id,
+            string factType,
+            string factValue,
+            DateTime factStartDate,
             DateTime factEndDate)
         {
             if (string.IsNullOrEmpty(factType))
                 throw new ArgumentException("factType is null or empty.", "factType");
-            
+
             if (factValue == null)
             {
                 throw new ArgumentNullException("factValue", "Argument cannot be null.");
@@ -217,7 +217,7 @@ namespace Benday.Presidents.Api.DataAccess
             else
             {
                 AddNewFact(id, factType, factValue, factStartDate, factEndDate);
-            }            
-        }        
+            }
+        }
     }
 }

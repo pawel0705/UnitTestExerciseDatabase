@@ -20,6 +20,10 @@ using Benday.DataAccess;
 using Benday.Presidents.Api.DataAccess.SqlServer;
 using Benday.Presidents.Api.Models;
 using Benday.Presidents.WebUI.Controllers;
+using Benday.Presidents.WebUi.Data;
+using Microsoft.AspNetCore.Identity;
+using Benday.Presidents.WebUi.Security;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Benday.Presidents.WebUi
 {
@@ -29,7 +33,7 @@ namespace Benday.Presidents.WebUi
         {
             Configuration = configuration;
         }
-        
+
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -42,9 +46,37 @@ namespace Benday.Presidents.WebUi
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
+            services.AddDbContext<ApplicationDbContext>(options =>
+                            options.UseSqlServer(
+                                Configuration.GetConnectionString("default")));
+
+            services.AddIdentity<IdentityUser, IdentityRole>(options =>
+                {
+                    options.Password.RequiredLength = 2;
+                    options.Password.RequireNonAlphanumeric = false;
+                    options.Password.RequireLowercase = false;
+                    options.Password.RequireUppercase = false;
+                    options.Password.RequireDigit = false;
+                    options.Password.RequiredUniqueChars = 0;
+                })
+                .AddRoleManager<RoleManager<IdentityRole>>()
+                .AddDefaultUI()
+                .AddDefaultTokenProviders()
+                .AddEntityFrameworkStores<ApplicationDbContext>();
+
             RegisterTypes(services);
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+
+            
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy(SecurityConstants.PolicyName_EditPresident,
+                                  policy => policy.Requirements.Add(
+                                      new EditPresidentRequirement()));
+            });
+
+            services.AddSingleton<IAuthorizationHandler, EditPresidentHandler>();            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -53,6 +85,7 @@ namespace Benday.Presidents.WebUi
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                app.UseDatabaseErrorPage();
             }
             else
             {
@@ -63,6 +96,10 @@ namespace Benday.Presidents.WebUi
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
+
+            app.UseAuthentication();
+
+            app.UsePopulateSubscriptionClaimsMiddleware();
 
             app.UseMvc(routes =>
             {
@@ -81,6 +118,11 @@ namespace Benday.Presidents.WebUi
                 .CreateScope())
             {
                 using (var context = scope.ServiceProvider.GetService<PresidentsDbContext>())
+                {
+                    context.Database.Migrate();
+                }
+
+                using (var context = scope.ServiceProvider.GetService<ApplicationDbContext>())
                 {
                     context.Database.Migrate();
                 }
@@ -110,8 +152,16 @@ namespace Benday.Presidents.WebUi
             services.AddTransient<IFeatureRepository, SqlEntityFrameworkFeatureRepository>();
 
             services.AddTransient<IPresidentService, PresidentService>();
+            services.AddTransient<ISubscriptionService, SubscriptionService>();
 
             services.AddTransient<ITestDataUtility, TestDataUtility>();
+
+            services.AddTransient<PopulateSubscriptionClaimsMiddleware>();
+
+            services.AddTransient<IUserAuthorizationStrategy, DefaultUserAuthorizationStrategy>();
+
+            services.AddTransient<IUserClaimsPrincipalProvider, 
+                HttpContextUserClaimsPrincipalProvider>();            
         }
     }
 }

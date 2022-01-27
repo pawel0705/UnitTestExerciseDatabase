@@ -17,6 +17,7 @@ namespace Benday.Presidents.Common
         DbSet<Relationship> Relationships { get; set; }
         DbSet<Feature> Features { get; set; }
         DbSet<LogEntry> LogEntries { get; set; }
+        DbSet<Subscription> Subscriptions { get; set; }
         EntityEntry Entry(object entity);
         int SaveChanges();
     }

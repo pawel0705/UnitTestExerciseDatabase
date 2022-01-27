@@ -1,9 +1,11 @@
+using System.Threading.Tasks;
+
 namespace Benday.Presidents.WebUI.Controllers
 {
     public interface ITestDataUtility
     {
-        void CreatePresidentTestData();
-        void VerifyDatabaseIsPopulated();
+        Task CreatePresidentTestData();
+        Task VerifyDatabaseIsPopulated();
     }
 
 }
